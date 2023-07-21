@@ -13,7 +13,7 @@ const GUITAR_FILE_MAX_SIZE:usize = 16777216; //16 MB, it should be enough
 struct Args {
     /// Action
     #[clap()] action: String,
-    
+
     /// Input file
     #[clap(short='i', long, help="Input file path")] input: String,
 

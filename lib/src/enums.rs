@@ -344,7 +344,7 @@ pub enum Fingering {
     /// Open or muted.
     Open = -1, //-1?
     /// Thumb.
-    Thumb = 0,
+    Thumb,
     /// Index finger.
     Index,
     /// Middle finger.
@@ -354,7 +354,7 @@ pub enum Fingering {
     /// Little finger.
     Little,
 
-    Unknown(i8),
+    Unknown,
 }
 
 pub(crate) fn get_fingering(value: i8) -> Fingering {
@@ -365,7 +365,7 @@ pub(crate) fn get_fingering(value: i8) -> Fingering {
         2  => Fingering::Middle,
         3  => Fingering::Annular,
         4  => Fingering::Little,
-        _  => Fingering::Unknown(value), //panic!("Cannot get fingering! How can you have more than 5 fingers per hand?!?"),
+        _  => Fingering::Unknown, //panic!("Cannot get fingering! How can you have more than 5 fingers per hand?!?"),
     }
 }
 pub(crate) fn from_fingering(value: &Fingering) -> i8 {
@@ -376,7 +376,7 @@ pub(crate) fn from_fingering(value: &Fingering) -> i8 {
         Fingering::Middle         => 2,
         Fingering::Annular        => 3,
         Fingering::Little         => 4,
-        Fingering::Unknown(value) => *value, //panic!("Cannot get fingering! How can you have more than 5 fingers per hand?!?"),
+        Fingering::Unknown => 6, //panic!("Cannot get fingering! How can you have more than 5 fingers per hand?!?"),
     }
 }
 
