@@ -15,6 +15,8 @@ pub mod note;
 pub mod lyric;
 pub mod beat;
 
+pub mod load;
+
 #[cfg(test)]
 mod test {
     use std::{io::Read, fs};
