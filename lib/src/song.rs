@@ -20,22 +20,22 @@ pub struct Song {
 
     pub name: String,
     pub subtitle: String, //Guitar Pro
-	pub artist: String,
-	pub album: String,
+    pub artist: String,
+    pub album: String,
     pub words: String, //GP
-	pub author: String, //music by
-	pub date: String,
-	pub copyright: String,
+    pub author: String, //music by
+    pub date: String,
+    pub copyright: String,
     /// Tab writer
-	pub writer: String,
-	pub transcriber: String,
+    pub writer: String,
+    pub transcriber: String,
     pub instructions: String,
-	pub comments: String,
+    pub comments: String,
     pub notice: Vec<String>,
 
-	pub tracks: Vec<Track>,
-	pub measure_headers: Vec<MeasureHeader>,
-	pub channels: Vec<MidiChannel>,
+    pub tracks: Vec<Track>,
+    pub measure_headers: Vec<MeasureHeader>,
+    pub channels: Vec<MidiChannel>,
     pub lyrics: Lyrics,
     pub tempo: i16,
     pub hide_tempo: bool,
@@ -55,28 +55,49 @@ pub struct Song {
 }
 
 impl Default for Song {
-	fn default() -> Self { Song {
-        version: Version {data: String::with_capacity(30), clipboard: false, number: (5,1,0)}, clipboard: None,
-		name:String::new(), subtitle: String::new(), artist:String::new(), album: String::new(),
-        words: String::new(), author:String::new(), date:String::new(),
-        copyright:String::new(), writer:String::new(), transcriber:String::new(), comments:String::new(),
-        notice:Vec::new(),
-        instructions: String::new(),
-		tracks:Vec::new(),
-		measure_headers:Vec::new(),
-		channels:Vec::with_capacity(64),
-        lyrics: Lyrics::default(),
-        tempo: 120, hide_tempo: false, tempo_name:String::from("Moderate"),
-        key: KeySignature::default(),
+    fn default() -> Self {
+        Self {
+            version: Version {
+                data: String::with_capacity(30),
+                clipboard: false,
+                number: (5,1,0)
+            },
+            clipboard: None,
+	    name: String::default(),
+            subtitle: String::default(),
+            artist: String::default(),
+            album: String::default(),
+            words: String::default(),
+            author:String::default(),
+            date: String::default(),
+            copyright: String::default(),
+            writer: String::default(),
+            transcriber:String::default(),
+            comments:String::default(),
+            notice:Vec::default(),
+            instructions: String::default(),
+	    tracks:Vec::default(),
+	    measure_headers:Vec::default(),
+	    channels:Vec::with_capacity(64),
+            lyrics: Lyrics::default(),
+            tempo: 120,
+            hide_tempo: false,
+            tempo_name:String::from("Moderate"),
+            key: KeySignature::default(),
 
-        triplet_feel: TripletFeel::None,
-        current_measure_number: None, current_track: None, current_voice_number: None, current_beat_number: None,
+            triplet_feel: TripletFeel::None,
+            current_measure_number: None,
+            current_track: None,
+            current_voice_number: None,
+            current_beat_number: None,
 
-        page_setup: PageSetup::default(),
+            page_setup: PageSetup::default(),
 
-        master_effect: RseMasterEffect::default(),
-	}}
+            master_effect: RseMasterEffect::default(),
+        }
+    }
 }
+
 impl Song {
     /// Read the song. A song consists of score information, triplet feel, tempo, song key, MIDI channels, measure and track count, measure headers, tracks, measures.
     /// - Version: `byte-size-string` of size 30.
