@@ -6,6 +6,7 @@ use std::path::Path;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
+use tracing_subscriber;
 
 const GUITAR_FILE_MAX_SIZE:usize = 16777216; //16 MB, it should be enough
 
@@ -21,6 +22,7 @@ struct Args {
 }
 
 fn main() {
+    tracing_subscriber::fmt::init();
     let args: Args = Args::parse();
     let f = Path::new(&args.input);
 
