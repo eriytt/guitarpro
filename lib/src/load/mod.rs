@@ -17,16 +17,6 @@ pub enum LoadError {
     GP7LoadError(#[from] gp7::LoadError)
 }
 
-// #[derive(Debug)]
-// pub struct GPFile {
-// }
-
-// impl GPFile {
-//     pub fn new() -> Self {
-//         GPFile {}
-//     }
-// }
-
 pub fn load(file: &Path) -> Result<Song, LoadError>{
     let ext = file.extension()
         .and_then(std::ffi::OsStr::to_str)
