@@ -6,11 +6,11 @@ mod gpif;
 pub use gpif::GPIF;
 
 mod rhythms;
-pub use rhythms::Rhythms;
+pub use rhythms::{Rhythms, Rhythm, PrimaryTuplet};
 
 #[allow(unused)]
 mod notes;
-pub use notes::Notes;
+pub use notes::{Notes, Note, NoteProperty};
 
 #[allow(unused)]
 mod parser_ext;
@@ -254,13 +254,17 @@ mod test {
 
 
 
-#[derive(PartialEq, Debug)]
-pub struct IdVec<T> {
+#[derive(PartialEq, Default, Debug)]
+pub struct IdVec<T: Default> {
     pub vec: Vec<T>
 }
 
+impl<T: Default> IdVec<T> {
+    pub fn len(&self) -> usize { self.vec.len()}
+}
+
 impl<T> std::str::FromStr for IdVec<T>
-where T: std::str::FromStr<Err = ParseIntError>
+where T: std::str::FromStr<Err = ParseIntError> + Default
 {
     type Err = ParseIntError;
 
@@ -277,7 +281,7 @@ where T: std::str::FromStr<Err = ParseIntError>
 
 
 impl<'a, T> XmlRead<'a> for IdVec<T>
-where T: std::str::FromStr<Err = ParseIntError>
+where T: std::str::FromStr<Err = ParseIntError> + Default
 {
     fn from_reader(reader: &mut XmlReader<'a>) -> XmlResult<Self> {
         if let Some(tag) = reader.find_element_start(None)? {
@@ -353,7 +357,7 @@ pub struct MasterBar<'a> {
 #[xml(tag = "Bars")]
 pub struct Bars<'a> {
     #[xml(child = "Bar")]
-    pub master_bars: Vec<Bar<'a>>,
+    pub bars: Vec<Bar<'a>>,
 }
 
 #[derive(XmlRead, PartialEq, Debug)]

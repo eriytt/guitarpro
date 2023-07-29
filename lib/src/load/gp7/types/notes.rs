@@ -7,7 +7,7 @@ use super::{Properties, PropertyParser, parser_ext::ReaderExt};
 #[xml(tag = "Notes")]
 pub struct Notes<'a> {
     #[xml(child = "Note")]
-    pub rythms: Vec<Note<'a>>,
+    pub notes: Vec<Note<'a>>,
 }
 
 #[derive(XmlRead, PartialEq, Debug)]
@@ -17,6 +17,12 @@ pub struct Note<'a> {
     instrument_articulation: Cow<'a, str>,
     #[xml(child = "Properties")]
     properties: NoteProperties
+}
+
+impl<'a> Note<'a> {
+    pub fn properties(&self) -> &Vec<NoteProperty> {
+        &self.properties.properties.properties
+    }
 }
 
 #[derive(XmlRead, PartialEq, Debug)]

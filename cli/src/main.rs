@@ -65,5 +65,6 @@ fn main() {
     println!("Writer:      \"{}\"", song.writer);
     println!("Transcriber: \"{}\"", song.transcriber);
     println!("Comments:    \"{}\"", song.comments);
+    println!("Tracks:    \"{:#?}\"", song.tracks);
     // let _out = song.write((3,0,0), Some(false));
 }

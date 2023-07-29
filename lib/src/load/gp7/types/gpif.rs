@@ -15,7 +15,7 @@ pub struct GPIF<'a> {
     pub master_track: MasterTrack<'a>,
 
     #[xml(child = "MasterBars")]
-    pub master_bar: MasterBars<'a>,
+    pub master_bars: MasterBars<'a>,
     #[xml(child = "Bars")]
     pub bars: Bars<'a>,
     #[xml(child = "Voices")]
