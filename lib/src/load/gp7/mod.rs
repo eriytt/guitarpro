@@ -1,10 +1,9 @@
-use std::{io::{Read, Seek}, borrow::Cow};
+use std::io::{Read, Seek};
 use thiserror::Error;
 use strong_xml::{XmlRead, XmlReader};
 use zip;
 
-
-use super::Song;
+use crate::gp::Song;
 
 mod types;
 mod convert;
@@ -46,18 +45,5 @@ pub fn load(reader: impl Read + Seek) -> Result<Song> {
     //log::debug!("Rythms: {:?}", gpif.rhythms);
     //log::debug!("Notes: {:?}", gpif.notes);
 
-    let song = Song {
-        artist: gpif.score.artist.to_string(),
-        name: gpif.score.title.to_string(),
-        album: gpif.score.album.to_string(),
-        author: gpif.score.music.to_string(),
-        words: gpif.score.words.to_string(),
-        copyright: gpif.score.copyright.to_string(),
-        transcriber: gpif.score.tabber.to_string(),
-        instructions: gpif.score.instructions.to_string(),
-        notice: gpif.score.notices.iter().map(Cow::to_string).collect(),
-        tracks: convert::gpif_to_tracks(&gpif),
-        ..Default::default()
-    };
-    Ok(song)
+    Ok(convert::gpif_to_song(&gpif))
 }

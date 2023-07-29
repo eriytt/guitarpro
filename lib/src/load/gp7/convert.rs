@@ -1,6 +1,9 @@
+use std::borrow::Cow;
+
 use super::types;
 
 use crate::{
+    gp::Song,
     track::Track,
     measure::Measure,
     beat::{Beat, Voice},
@@ -113,6 +116,22 @@ fn masterbars_to_tracks(masterbars: &types::MasterBars, gpif: &types::GPIF) -> V
     tracks
 }
 
-pub fn gpif_to_tracks(gpif: &types::GPIF) -> Vec<Track> {
+fn gpif_to_tracks(gpif: &types::GPIF) -> Vec<Track> {
     masterbars_to_tracks(&gpif.master_bars, gpif)
+}
+
+pub fn gpif_to_song(gpif: &types::GPIF) -> Song {
+    Song {
+        artist: gpif.score.artist.to_string(),
+        name: gpif.score.title.to_string(),
+        album: gpif.score.album.to_string(),
+        author: gpif.score.music.to_string(),
+        words: gpif.score.words.to_string(),
+        copyright: gpif.score.copyright.to_string(),
+        transcriber: gpif.score.tabber.to_string(),
+        instructions: gpif.score.instructions.to_string(),
+        notice: gpif.score.notices.iter().map(Cow::to_string).collect(),
+        tracks: gpif_to_tracks(&gpif),
+        ..Default::default()
+    }
 }
