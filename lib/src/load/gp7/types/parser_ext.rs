@@ -5,33 +5,15 @@ use strong_xml::{XmlReader, XmlResult, XmlError};
 use strong_xml::xmlparser::Token;
 use strong_xml::utils::xml_unescape;
 
-// pub trait ReaderExt {
-//     fn log_current(&mut self, s: &str);
-//     fn open_tag(& mut self) -> XmlResult<Cow<'_, str>>;
-//     fn open_tag_named(&mut self, name: &str) -> XmlResult<()>;
-//     fn attr(&mut self) -> XmlResult<(Cow<'_, str>, Cow<'_, str>)>;
-//     fn attr_named(&mut self, name: &str) -> XmlResult<Cow<'_, str>>;
-//     fn skip_to_open(&mut self) -> XmlResult<()>;
-//     fn my_find_attribute(&mut self) -> XmlResult<Option<(&'_ str, Cow<'_, str>)>>;
-// }
-
 pub struct ReaderExt<'a, 'b> {
     reader: &'a mut XmlReader<'b>
 }
-
-// impl<'a> std::convert::From<&mut XmlReader<'a>> for ReaderExt<'a> {
-//     fn from(value: &mut XmlReader<'a>) -> Self {
-//         Self { reader: value }
-//     }
-// }
 use strong_xml::xmlparser::ElementEnd;
 use strong_xml::xmlparser::Error;
-// use strong_xml::xmlparser::Token;
-// use strong_xml::xmlparser::Tokenizer;
 
 impl<'a, 'b> ReaderExt<'a, 'b> {
     pub fn new(reader: &'a mut XmlReader<'b>) -> Self {
-        Self { reader: reader }
+        Self { reader }
     }
 
     pub fn as_mut(&mut self) -> &mut XmlReader<'b> {
@@ -49,12 +31,10 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
 
     pub fn until_end_tag(&mut self, name: &str) -> XmlResult<bool> {
         while let Some(token) = self.peek() {
-            log::debug!("until end: {:?}", token);
             match token {
                 Err(e) => { return Err(XmlError::Parser(*e)); }
                 Ok(Token::ElementStart {..}) => { return Ok(true); },
                 Ok(Token::ElementEnd { end: ElementEnd::Close(_, tag), .. }) => {
-                    log::debug!("until end found end: {} == {}?", name, tag.as_str());
                     return if tag.as_str() == name {
                         Ok(false)
                     } else {
@@ -98,7 +78,7 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
                 Ok(Token::ElementEnd {
                     end: ElementEnd::Close(_, span),
                     ..
-                }) => { log::debug!("Close tag: {:?}", span); return Ok(span.as_str()); },
+                }) => { return Ok(span.as_str()); },
                 _ => return Err(XmlError::UnexpectedToken { token: format!("{:?}", token) })
             }
         }
@@ -108,12 +88,9 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
 
     pub fn close_tag_named(&mut self, name: &str) -> XmlResult<()> {
         let tag = self.close_tag()?;
-        log::debug!("Close tag named: {}", tag);
         if tag == name {
-            log::debug!("Yup, that's we're looking for");
             Ok(())
         } else {
-            log::debug!("{:?} is not equal to {:?}", tag, name);
             Err(XmlError::UnexpectedToken { token: tag.to_string() })
         }
     }
@@ -126,7 +103,6 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
                      let value = value.as_str();
                      let span = span.as_str(); // key="value"
                      let key = &span[0..span.len() - value.len() - 3]; // remove `="`, value and `"`
-                     //self.next();
                      return Ok((Cow::Borrowed(key), Cow::Borrowed(value)));
                 }
                 _ => return Err(XmlError::UnexpectedToken { token: format!("{:?}", token) })
@@ -233,44 +209,20 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
         Err(XmlError::UnexpectedEof)
     }
 
+    pub fn simple_tag_text(&mut self, tag: &str) -> XmlResult<Cow<'b, str>> {
+        self.skip_to_open()?;
+        let t = self.open_tag_named(tag)?;
+        self.skip_to_text()?;
+        let t = self.text()?;
+        self.close_tag_named(tag)?;
+        Ok(t)
+    }
 
-    // pub fn my_find_attribute(&mut self) -> XmlResult<Option<(&'a str, Cow<'a, str>)>> {
-    //     unimplemented!()
-    //     // if let Some(token) = self.peek() {
-    //     //     match token {
-    //     //         Ok(Token::Attribute { span, value, .. }) => {
-    //     //             let value = value.as_str();
-    //     //             let span = span.as_str(); // key="value"
-    //     //             let key = &span[0..span.len() - value.len() - 3]; // remove `="`, value and `"`
-    //     //             let value = Cow::Borrowed(value);
-    //     //             self.next();
-    //     //             return Ok(Some((key, value)));
-    //     //         }
-    //     //         Ok(Token::ElementEnd {
-    //     //             end: ElementEnd::Open,
-    //     //             ..
-    //     //         })
-    //     //         | Ok(Token::ElementEnd {
-    //     //             end: ElementEnd::Empty,
-    //     //             ..
-    //     //         }) => return Ok(None),
-    //     //         Ok(token) => {
-    //     //             return Err(XmlError::UnexpectedToken {
-    //     //                 token: format!("{:?}", token),
-    //     //             })
-    //     //         }
-    //     //         Err(_) => {
-    //     //             // we have call .peek() above, and it's safe to use unwrap
-    //     //             self.next().unwrap()?;
-    //     //         }
-    //     //     }
-    //     // }
-
-    //     // Err(XmlError::UnexpectedEof)
-    // }
-
-    // pub fn log_current(&mut self, s: &str) {
-    //     log::debug!("{}: {:?}", s, self.reader.peek().unwrap().unwrap());
-    // }
+    pub fn empty_tag(&mut self) -> XmlResult<Cow<'b, str>> {
+        self.skip_to_open()?;
+        let t = self.open_tag()?;
+        self.skip_over_close_empty()?;
+        Ok(Cow::Borrowed(t))
+    }
 
 }

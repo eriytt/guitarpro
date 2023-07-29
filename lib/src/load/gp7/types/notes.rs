@@ -52,113 +52,62 @@ pub enum NoteProperty {
     TransposedPitch(Pitch)
 }
 
+fn enable<'a, 'r>(reader: &'r mut ReaderExt<'r, 'a>) -> XmlResult<bool> {
+    match reader.empty_tag()?.as_ref() {
+        "Enable" => Ok(true),
+        "Disable" => Ok(false),
+        t => Err(XmlError::TagMismatch {
+            expected: "Enable/Disable".into(),
+            found: t.into() })
+    }
+}
+
+fn simple_number_tag<'a, 'r, T>(tag: &str, reader: &'r mut ReaderExt<'r, 'a>) -> XmlResult<T>
+where T:  std::str::FromStr,
+<T as std::str::FromStr>::Err: std::error::Error + Send + Sync + 'static
+{
+    let val = reader.simple_tag_text(tag)?;
+    val.parse::<T>().map_err(|e| XmlError::FromStr(Box::new(e)))
+}
+
+
+
 impl<'a> PropertyParser<'a> for NoteProperty {
     fn parse_property(typ: &str, reader: &mut XmlReader<'a>) -> XmlResult<Self> {
         let mut reader = ReaderExt::new(reader);
         match typ {
+            "Harmonic" =>
+                Ok(NoteProperty::Harmonic(enable(&mut reader)?)) ,
+            "LeftHandTapped" =>
+                Ok(NoteProperty::LeftHandTapped(enable(&mut reader)?)),
+            "Tapped" =>
+                Ok(NoteProperty::Tapped(enable(&mut reader)?)),
+            "HopoOrigin" =>
+                Ok(NoteProperty::HopoOrigin(enable(&mut reader)?)),
+            "HopoDestination" =>
+                Ok(NoteProperty::HopoDestination(enable(&mut reader)?)),
+            "HopoOrigin" =>
+                Ok(NoteProperty::HopoOrigin(enable(&mut reader)?)),
+            "Muted" =>
+                Ok(NoteProperty::Muted(enable(&mut reader)?)),
+            "PalmMuted" =>
+                Ok(NoteProperty::PalmMuted(enable(&mut reader)?)),
+            "Fret" =>
+                Ok(NoteProperty::Fret(simple_number_tag::<u8>("Fret", &mut reader)?)),
+            "HarmonicFret" =>
+                Ok(NoteProperty::HarmonicFret(simple_number_tag::<f32>("HFret", &mut reader)?)),
+            "Midi" =>
+                Ok(NoteProperty::Midi(simple_number_tag::<u8>("Number", &mut reader)?)),
+            "Slide" =>
+                Ok(NoteProperty::Slide(simple_number_tag::<u8>("Flags", &mut reader)?)),
+            "String" =>
+                Ok(NoteProperty::String(simple_number_tag::<u8>("String", &mut reader)?)),
+            "HarmonicType" =>
+                Ok(NoteProperty::HarmonicType(reader.simple_tag_text("HType")?.into())),
             "ConcertPitch" => {
                 reader.skip_to_open()?;
                 let pitch = Pitch::from_reader(reader.as_mut())?;
-                log::debug!("After pitch read: {:?}", reader.peek());
-                //reader.skip_over_close()?;
-                log::debug!("Done reading concert pitch: {:?}", reader.peek());
                 Ok(NoteProperty::ConcertPitch(pitch))
-            },
-            "Fret" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Fret")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("Fret")?;
-                Ok(NoteProperty::Fret(val.parse::<u8>().map_err(|e| XmlError::FromStr(Box::new(e)))?))
-            },
-            "Harmonic" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::Harmonic(true))
-            },
-            "HarmonicFret" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("HFret")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("HFret")?;
-                Ok(NoteProperty::HarmonicFret(val.parse::<f32>().map_err(|e| XmlError::FromStr(Box::new(e)))?))
-            },
-            "HarmonicType" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("HType")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("HType")?;
-                Ok(NoteProperty::HarmonicType(val.into()))
-            },
-            "LeftHandTapped" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::LeftHandTapped(true))
-            },
-            "Tapped" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::Tapped(true))
-            },
-            "HopoOrigin" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::HopoOrigin(true))
-            },
-            "HopoDestination" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::HopoDestination(true))
-            },
-            "Midi" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Number")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("Number")?;
-                Ok(NoteProperty::Midi(val.parse::<u8>().map_err(|e| XmlError::FromStr(Box::new(e)))?))
-            },
-            "Slide" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Flags")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("Flags")?;
-                Ok(NoteProperty::Slide(val.parse::<u8>().map_err(|e| XmlError::FromStr(Box::new(e)))?))
-            },
-            "HopoOrigin" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::HopoOrigin(true))
-            },
-            "Muted" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::Muted(true))
-            },
-            "PalmMuted" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("Enable")?;
-                reader.skip_over_close_empty()?;
-                Ok(NoteProperty::PalmMuted(true))
-            },
-            "String" => {
-                reader.skip_to_open()?;
-                reader.open_tag_named("String")?;
-                reader.skip_to_text()?;
-                let val = reader.text()?;
-                reader.close_tag_named("String")?;
-                Ok(NoteProperty::String(val.parse::<u8>().map_err(|e| XmlError::FromStr(Box::new(e)))?))
             },
             "TransposedPitch" => {
                 reader.skip_to_open()?;

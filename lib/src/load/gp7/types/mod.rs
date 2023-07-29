@@ -16,39 +16,6 @@ pub use notes::{Notes, Note, NoteProperty};
 mod parser_ext;
 use parser_ext::ReaderExt;
 
-// reader::next()
-// Reads the next token (might be empty)
-//
-// reader::peek()
-// Same as read but does not advance
-//
-// reader::read_text(end_tag)
-// Reads element text, advancing. Ignores ElementEnd::Open and Attributes and records the text.
-// The end_tag must match the first encountered. Only raw text (or CDATA) is allowed inside the tag.
-// Does not advance past potential newlines after end?
-//
-// reader.read_till_element_start(end_tag)
-// Error on ElementEnd, Attribute, and text (including CDATA). Newlines are allowed (?).
-// If end_tag doesn't match the start_tag, skips over the tag (read_to_end)(?). end_tag is effectively
-// the start tag to search for.
-//
-// reader.find_attribute()
-// Get one attribute, consuming it. Must be called after an ElementStart.
-// Does not consume the ElementEnd.
-//
-// reader.find_element_start(Option<end_tag>)
-// Forward to ElementStart without consuming it. Attributes and ElementEnd::Open are errors.
-// ElementEnd::Close are ok if the end_tag matches. Anything else will just be forwarded over.
-// Caveat: If you hit a matching ElementEnd, you will not get the ElementStart returned.
-//
-// reader.read_to_end(end_tag)
-// Seems to be made for skipping over the rest of a tag when you're after the ElementStart, also
-// nested tags. However Text is not allowed anywhere, so this seems broken.
-// Hmm, text seems to be allowd after all
-
-// XmlRead::from_reader()
-// When called, you're before the ElementStart. 
-
 trait PropertyParser<'a>: Sized {
     fn parse_property(typ: &str, reader: &mut XmlReader<'a>) -> XmlResult<Self>;
 }
@@ -66,91 +33,20 @@ where T: PropertyParser<'a> + std::fmt::Debug
         let mut properties = Vec::<T>::new();
         let mut reader = ReaderExt::new(reader);
 
-        log::debug!("Start reading properties: {:?}", reader.peek());
-
         while reader.until_end_tag("Properties")? {
             reader.skip_to_open()?; // This might be the last property
-            log::debug!("Read open");
             reader.open_tag_named("Property")?;
-            log::debug!("Read name attribute");
             let name = reader.attr_named("name")?;
-            log::debug!("Read skip to open (name={})", name);
             reader.skip_to_open()?;
 
-            log::debug!("Parse property");
             let prop = <T as PropertyParser>::parse_property(name.as_ref(), reader.as_mut())?;
-            log::debug!("Read property {:?}", &prop);
             properties.push(prop);
 
             reader.skip_to_close()?;
             reader.close_tag_named("Property")?;
-
-            log::debug!("Closed");
-            log::debug!("Skip to next property: {:?}", reader.peek());
-
-            log::debug!("Loop: {:?}", reader.peek());
         }
         Ok(Self { properties} )
     }
-
-    // fn from_reader(reader: &mut XmlReader<'a>) -> XmlResult<Self> {
-    //     let mut properties = Vec::<T>::new();
-
-    //     reader.log_current("At before start tag:");
-    //     // Forward to the next Property
-    //     while let Some(tag) = reader.open_tag()? {
-
-    //         // let w = reader.peek().unwrap().unwrap();
-    //         log::debug!("At start tag {}", tag);
-    //         reader.log_current("At start tag:");
-    //         //log::debug!("At start tag {}: {:?}", tag, reader.peek().unwrap().unwrap());
-    //         reader.next();
-
-    //         // Get attribute "name" value;
-    //         let typ = match reader.find_attribute()? {
-    //             Some((k, v)) => {
-    //                 log::debug!("Attribute: {}={}", k, v);
-    //                 match k {
-    //                     "name" => Ok(v),
-    //                     _ => Err(XmlError::UnexpectedToken {
-    //                         token: format!("Unsupported property attribute key: {}", k) })
-    //                 }
-    //             },
-    //             None => Err(XmlError::MissingField { name: "Property".into(), field: "name".into()})
-    //         }?;
-
-    //         //log::debug!("After attribute: {:?}", reader.peek().unwrap().unwrap());
-
-    //         // Forward to child, checking attribute
-    //         if let Some(attr) = reader.find_attribute()? {
-    //             return Err(XmlError::UnexpectedToken {
-    //                 token: format!("Unexpected property attribute {:?}", attr)
-    //             })
-    //         }
-
-    //         //log::debug!("After attribute check: {:?}", reader.peek().unwrap().unwrap());
-    //         reader.next().unwrap()?;
-
-    //         // Get the child start tag
-    //         let start_tag = reader.find_element_start(None)?.unwrap();
-    //         // log::debug!("At property?: {:?}", reader.peek().unwrap().
-
-    //         log::debug!("Parsing property {}(tag = {}): {:?}", typ, start_tag, reader.peek().unwrap().unwrap());
-
-    //         let prop = <T as PropertyParser>::parse_property(typ.as_ref(), start_tag, reader)?;
-    //         properties.push(prop);
-
-    //         log::debug!("After property parse: {:?}", reader.peek().unwrap().unwrap());
-    //         reader.next().unwrap()?;
-
-    //         // log::debug!("Got tag: {:?}", reader.find_element_start(Some("Property"))?);
-    //         // log::debug!("At next property?: {:?}", reader.peek().unwrap().unwrap());
-
-    //         // log::debug!("Got tag again: {:?}", reader.find_element_start(Some("Property"))?); 
-    //         // log::debug!("At next property again?: {:?}", reader.peek().unwrap().unwrap());
-    //     }
-    //     Err(XmlError::UnexpectedEof)
-    // }
 }
 
 #[cfg(test)]
@@ -284,20 +180,17 @@ impl<'a, T> XmlRead<'a> for IdVec<T>
 where T: std::str::FromStr<Err = ParseIntError> + Default
 {
     fn from_reader(reader: &mut XmlReader<'a>) -> XmlResult<Self> {
-        if let Some(tag) = reader.find_element_start(None)? {
-            reader.next();
-            if let Some(attr) = reader.find_attribute()? {
-                return Err(XmlError::UnexpectedToken { token: attr.0.to_owned() })
-            }
-            reader.next();
-            let text = reader.read_text(tag)?;
-            let v = <IdVec<T> as std::str::FromStr>::from_str(text.as_ref())
-                .map_err(|e| XmlError::FromStr(Box::new(e)))?;
+        let mut reader = ReaderExt::new(reader);
 
-            reader.next();
-            return Ok(v);
-        }
-        Err(XmlError::UnexpectedEof)
+        let tag = reader.open_tag()?;
+        reader.skip_to_text()?;
+        let text = reader.text()?;
+        let v = <IdVec<T> as std::str::FromStr>::from_str(text.as_ref())
+            .map_err(|e| XmlError::FromStr(Box::new(e)))?;
+        reader.skip_to_close()?;
+        reader.close_tag_named(tag)?;
+
+        Ok(v)
     }
 }
 

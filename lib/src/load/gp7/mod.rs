@@ -40,10 +40,10 @@ pub fn load(reader: impl Read + Seek) -> Result<Song> {
     log::debug!("MasterTrack: {:?}", gpif.master_track);
     log::debug!("Number of MasterBars: {}", gpif.master_bars.master_bars.len());
 
-    log::debug!("Number of tracks: {}", gpif.master_bars.master_bars[0].time);
-    log::debug!("Number of tracks: {:?}", gpif.master_bars.master_bars[0].bars);
-    //log::debug!("Rythms: {:?}", gpif.rhythms);
-    //log::debug!("Notes: {:?}", gpif.notes);
+    log::debug!("Initial time signature: {}", gpif.master_bars.master_bars[0].time);
+    log::debug!("Number of tracks: {:?}", gpif.master_bars.master_bars[0].bars.len());
+    log::debug!("Rythms: {:?}", gpif.rhythms.rythms.len());
+    log::debug!("Notes: {:?}", gpif.notes.notes.len());
 
     Ok(convert::gpif_to_song(&gpif))
 }
