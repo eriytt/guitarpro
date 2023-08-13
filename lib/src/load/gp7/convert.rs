@@ -8,7 +8,7 @@ use crate::{
     measure::Measure,
     beat::{Beat, Voice},
     note::Note,
-    key_signature::Duration
+    key_signature::{Duration, TimeSignature}
 };
 
 fn note_to_note(note: &types::Note) -> Note {
@@ -81,8 +81,14 @@ fn voice_to_voice(voice: &types::Voice, gpif: &types::GPIF) -> Voice {
     }
 }
 
-fn bar_to_measure(bar: &types::Bar, gpif: &types::GPIF) -> Measure {
+fn bar_to_measure(masterbar: &types::MasterBar, bar: &types::Bar, gpif: &types::GPIF) -> Measure {
+    let (num, den) = masterbar.time.split_once("/").unwrap();
     Measure {
+        time_signature: TimeSignature {
+            numerator: num.parse::<_>().unwrap(),
+            denominator: Duration { value: den.parse::<_>().unwrap(), ..Default::default()},
+            ..Default::default()
+        },
         voices: bar.voices.vec.iter()
             .filter_map(|voice_id| {
                 if *voice_id < 0i16 {
@@ -103,10 +109,14 @@ fn masterbars_to_tracks(masterbars: &types::MasterBars, gpif: &types::GPIF) -> V
     let mut tracks = Vec::<Track>::with_capacity(num_tracks);
 
     for track_index in 0..num_tracks {
-        let bar_iterator = masterbars.master_bars.iter().map(|mb| mb.bars.vec[track_index]);
+        let mbar_iterator = masterbars.master_bars.iter().map(|mb| (mb, mb.bars.vec[track_index]));
         let track = Track {
-            measures: bar_iterator
-                .map(|bar_index| bar_to_measure(&gpif.bars.bars[bar_index as usize], gpif))
+            measures: mbar_iterator
+                .map(|(masterbar, bar_index)| bar_to_measure(
+                    masterbar,
+                    &gpif.bars.bars[bar_index as usize],
+                    gpif)
+                )
                 .collect(),
             ..Default::default()
         };
@@ -121,7 +131,7 @@ fn gpif_to_tracks(gpif: &types::GPIF) -> Vec<Track> {
 }
 
 pub fn gpif_to_song(gpif: &types::GPIF) -> Song {
-    Song {
+    let mut song = Song {
         artist: gpif.score.artist.to_string(),
         name: gpif.score.title.to_string(),
         album: gpif.score.album.to_string(),
@@ -133,5 +143,13 @@ pub fn gpif_to_song(gpif: &types::GPIF) -> Song {
         notice: gpif.score.notices.iter().map(Cow::to_string).collect(),
         tracks: gpif_to_tracks(&gpif),
         ..Default::default()
+    };
+
+    // TODO: what if there are multiple different tempos?
+    if let Some(tempo_automation) = gpif.master_track.automations.iter().find(|a| a.typ == "Tempo") {
+        let  (bpm, _note_value) = tempo_automation.value.split_once(" ").unwrap();
+        song.tempo = bpm.parse::<_>().unwrap();
     }
+
+    song
 }

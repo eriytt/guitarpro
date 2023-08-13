@@ -225,8 +225,38 @@ pub struct Score<'a> {
 pub struct MasterTrack<'a> {
     #[xml(flatten_text = "Tracks")]
     pub tracks: Cow<'a, str>,
-    // #[xml(flatten_text = "Bars")]
-    // pub bars: Vec<u8>,
+    #[xml(child = "Automations")]
+    pub automations: Automations<'a>,
+}
+
+#[derive(XmlRead, PartialEq, Debug)]
+#[xml(tag = "Automations")]
+pub struct Automations<'a> {
+    #[xml(child = "Automation")]
+    automations:  Vec<Automation<'a>>,
+}
+
+impl<'a> Automations<'a> {
+    pub fn iter(&self) ->  std::slice::Iter<'_, Automation<'a>> {
+        self.automations.iter()
+    }
+}
+
+#[derive(XmlRead, PartialEq, Debug)]
+#[xml(tag = "Automation")]
+pub struct Automation<'a> {
+    #[xml(flatten_text = "Type")]
+    pub typ: Cow<'a, str>,
+    #[xml(flatten_text = "Linear")]
+    pub linear: bool,
+    #[xml(flatten_text = "Bar")]
+    pub bar: u16,
+    #[xml(flatten_text = "Position")]
+    pub position: u16,
+    #[xml(flatten_text = "Visible")]
+    pub visible: bool,
+    #[xml(flatten_text = "Value")]
+    pub value: Cow<'a, str>,
 }
 
 #[derive(XmlRead, PartialEq, Debug)]

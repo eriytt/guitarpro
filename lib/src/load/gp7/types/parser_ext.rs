@@ -166,7 +166,6 @@ impl<'a, 'b> ReaderExt<'a, 'b> {
 
     pub fn skip_to_close(&mut self) -> XmlResult<()> {
         while let Some(token) = self.reader.peek() {
-            log::debug!("next {:?}", token);
             match token {
                 Err(e) => { return Err(XmlError::Parser(*e)); }
                 Ok(Token::ElementEnd { end: ElementEnd::Close(_, _), .. }) => {
